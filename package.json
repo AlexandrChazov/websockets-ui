@@ -1,29 +1,32 @@
 {
-    "name": "websockets-ui",
-    "version": "1.0.0",
-    "description": "WebSocket remote control",
-    "main": "index.ts",
-    "type": "module",
-    "scripts": {
-        "start": "npx tsx ./index.ts",
-        "start:dev": "npx tsx watch ./index.ts",
-        "format": "prettier src/**/*.{js,ts,cjs,mjs} --write",
-        "lint": "eslint src/**/*.{js,ts,cjs,mjs} --fix"
-    },
-    "author": "Alexandr Chazov",
-    "keywords": [],
-    "license": "ISC",
-    "dependencies": {
-        "ws": "^8.18.0"
-    },
-    "devDependencies": {
-        "@eslint/js": "^9.13.0",
-        "@types/node": "^22.7.8",
-        "eslint": "^8.55.0",
-        "eslint-config-prettier": "^9.1.0",
-        "globals": "^15.11.0",
-        "prettier": "3.3.3",
-        "tsx": "^4.19.1",
-        "typescript-eslint": "^8.11.0"
-    }
+  "name": "websockets-ui",
+  "version": "1.0.0",
+  "description": "WebSocket remote control",
+  "main": "index.ts",
+  "type": "module",
+  "scripts": {
+    "start": "npx tsx ./index.ts",
+    "start:dev": "npx tsx watch ./index.ts",
+    "format": "prettier src/**/*.{js,ts,cjs,mjs} --write",
+    "lint": "eslint src/**/*.{js,ts,cjs,mjs} --fix",
+    "prepare": "husky"
+  },
+  "author": "Alexandr Chazov",
+  "keywords": [],
+  "license": "ISC",
+  "dependencies": {
+    "ws": "^8.18.0"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.13.0",
+    "@types/node": "^22.7.8",
+    "eslint": "^8.55.0",
+    "eslint-config-prettier": "^9.1.0",
+    "globals": "^15.11.0",
+    "husky": "^9.1.6",
+    "lint-staged": "^15.2.10",
+    "prettier": "3.3.3",
+    "tsx": "^4.19.1",
+    "typescript-eslint": "^8.11.0"
+  }
 }
