@@ -5,7 +5,7 @@
   "main": "index.ts",
   "type": "module",
   "scripts": {
-    "start:front": "serve -s front -p 3001",
+    "start:front": "npx tsx index.ts",
     "start": "npx tsx ./src/index.ts",
     "start:dev": "npx tsx watch ./src/index.ts",
     "format": "prettier src/**/*.{js,ts,cjs,mjs} --write",
