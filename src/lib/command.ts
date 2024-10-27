@@ -1,9 +1,9 @@
-import { ICommand } from "../model/types";
+import { RawData } from "ws";
 
-export function command(arg: string) {
-	const { data, id, type } = JSON.parse(arg.toString()) as ICommand;
+export function command(arg: RawData) {
+	const { data, id, type } = JSON.parse(arg.toString());
 	return {
-		data: JSON.parse(data),
+		data: data === "" ? data : JSON.parse(data),
 		id,
 		type,
 	};

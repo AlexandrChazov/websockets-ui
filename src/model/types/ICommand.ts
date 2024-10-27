@@ -1,5 +1,5 @@
 export interface ICommand {
-	data: string;
-	id: string;
-	type: 0;
+	data: unknown;
+	id: number;
+	type: string;
 }
