@@ -1,4 +1,21 @@
 export interface IRoom {
 	roomId: number;
-	roomUsers: { name: string; index: string }[];
+	roomUsers: IUser[];
+	currentPlayerIndex: string;
+}
+
+interface IShip {
+	position: {
+		x: number;
+		y: number;
+	};
+	direction: boolean;
+	length: number;
+	type: "small" | "medium" | "large" | "huge";
+}
+
+interface IUser {
+	name: string;
+	index: string;
+	ships: IShip[];
 }

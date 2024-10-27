@@ -6,8 +6,9 @@ import {
 	getAvailableRooms,
 	stringify,
 	updateWinners,
+	turn,
 } from "./lib";
-import { DB, EType, IRoom } from "./model";
+import { DB, EType } from "./model";
 
 config();
 const PORT = Number(process.env.PORT);
@@ -19,7 +20,7 @@ console.log(`Server started on host "${HOST}", port "${PORT}"`);
 wss.on("connection", function connection(ws, request) {
 	const secWebsocketKey = request.headers["sec-websocket-key"];
 	let userName = "";
-	let currentRoom: IRoom | null = null;
+	let currentRoomId = 0;
 
 	ws.on("message", function message(buffer) {
 		const { data, type } = command(buffer);
@@ -68,14 +69,17 @@ wss.on("connection", function connection(ws, request) {
 			}
 			case EType.CREATE_ROOM: {
 				const roomId = getNewRoomId();
+				currentRoomId = roomId;
 				DB.rooms[roomId] = {
 					roomId,
 					roomUsers: [
 						{
 							name: userName,
 							index: secWebsocketKey,
+							ships: [],
 						},
 					],
+					currentPlayerIndex: "",
 				};
 				ws.send(
 					stringify({
@@ -92,8 +96,12 @@ wss.on("connection", function connection(ws, request) {
 					({ roomId }) => roomId === indexRoom,
 				);
 				if (!room) break;
-				currentRoom = room;
-				room.roomUsers.push({ name: userName, index: secWebsocketKey });
+				currentRoomId = room.roomId;
+				DB.rooms[currentRoomId].roomUsers.push({
+					name: userName,
+					index: secWebsocketKey,
+					ships: [],
+				});
 				room.roomUsers.forEach((user) => {
 					const wsClient = DB.players[user.name].ws;
 					wsClient.send(
@@ -111,6 +119,18 @@ wss.on("connection", function connection(ws, request) {
 			}
 			case EType.ADD_SHIP: {
 				const ships = data.ships;
+				const currentRoom = DB.rooms[currentRoomId];
+				const user = currentRoom.roomUsers.find(
+					(user) => user.index === secWebsocketKey,
+				);
+				if (!user) break;
+				user.ships = ships;
+				currentRoom.currentPlayerIndex =
+					currentRoom.roomUsers[Math.random() < 0.5 ? 0 : 1].index;
+				const ready = DB.rooms[currentRoomId].roomUsers.filter(({ ships }) => {
+					return ships.length > 0;
+				});
+				if (ready.length < 2) break;
 				currentRoom?.roomUsers.forEach((user) => {
 					const wsClient = DB.players[user.name].ws;
 					wsClient.send(
@@ -123,6 +143,7 @@ wss.on("connection", function connection(ws, request) {
 							id: 0,
 						}),
 					);
+					turn(ws, currentRoom.currentPlayerIndex);
 				});
 				break;
 			}
