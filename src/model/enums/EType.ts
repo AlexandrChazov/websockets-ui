@@ -5,7 +5,7 @@ export enum EType {
 	ADD_USER_TO_ROOM = "add_user_to_room",
 	CREATE_GAME = "create_game",
 	UPDATE_ROOM = "update_room",
-	ADD_SHIP = "add_ships",
+	ADD_SHIPS = "add_ships",
 	START_GAME = "start_game",
 	ATTACK = "attack",
 	RANDOM_ATTACK = "randomAttack",

@@ -1,3 +1,3 @@
 export { DB } from "./DB";
-export { EType } from "./enums";
-export type { ICommand, IRoom } from "./types";
+export { EStatus, EType } from "./enums";
+export type { ICommand, IRoom, IPlayer, IShip } from "./types";

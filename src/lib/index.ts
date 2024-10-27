@@ -1,6 +1,9 @@
 export { command } from "./command";
+export { getAttackResult } from "./getAttackResult";
+export { getCoordinates } from "./getCoordinates";
 export { getNewRoomId } from "./getNewRoomId";
 export { getAvailableRooms } from "./getAvailableRooms";
+export { roomInfo } from "./roomInfo";
 export { stringify } from "./stringify";
 export { updateWinners } from "./updateWinners";
 export { turn } from "./turn";

@@ -1,2 +1,2 @@
 export type { ICommand } from "./ICommand";
-export type { IRoom } from "./IRoom";
+export type { IRoom, IPlayer, IShip } from "./IRoom";

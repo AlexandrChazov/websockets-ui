@@ -2,13 +2,16 @@ import { config } from "dotenv";
 import { WebSocketServer } from "ws";
 import {
 	command,
-	getNewRoomId,
+	getAttackResult,
 	getAvailableRooms,
+	getCoordinates,
+	getNewRoomId,
+	roomInfo,
 	stringify,
-	updateWinners,
 	turn,
+	updateWinners,
 } from "./lib";
-import { DB, EType } from "./model";
+import { DB, EStatus, EType, IShip } from "./model";
 
 config();
 const PORT = Number(process.env.PORT);
@@ -24,6 +27,8 @@ wss.on("connection", function connection(ws, request) {
 
 	ws.on("message", function message(buffer) {
 		const { data, type } = command(buffer);
+		console.log("Command:", type);
+		console.log("data:", data);
 		switch (type) {
 			case EType.REG: {
 				const { name, password } = data as { name: string; password: string };
@@ -77,39 +82,48 @@ wss.on("connection", function connection(ws, request) {
 							name: userName,
 							index: secWebsocketKey,
 							ships: [],
+							ws,
 						},
 					],
 					currentPlayerIndex: "",
 				};
-				ws.send(
-					stringify({
-						type: EType.UPDATE_ROOM,
-						data: getAvailableRooms(),
-						id: 0,
-					}),
-				);
+				wss.clients.forEach((client) => {
+					client.send(
+						stringify({
+							type: EType.UPDATE_ROOM,
+							data: getAvailableRooms(),
+							id: 0,
+						}),
+					);
+				});
 				break;
 			}
 			case EType.ADD_USER_TO_ROOM: {
 				const { indexRoom } = data;
-				const room = Object.values(DB.rooms).find(
-					({ roomId }) => roomId === indexRoom,
-				);
+				const { room } = roomInfo(indexRoom, secWebsocketKey);
 				if (!room) break;
+				if (room.roomUsers[0].index === secWebsocketKey) break;
 				currentRoomId = room.roomId;
-				DB.rooms[currentRoomId].roomUsers.push({
+				DB.rooms[indexRoom].roomUsers.push({
 					name: userName,
 					index: secWebsocketKey,
 					ships: [],
+					ws,
 				});
-				room.roomUsers.forEach((user) => {
-					const wsClient = DB.players[user.name].ws;
-					wsClient.send(
+				room.roomUsers.forEach(({ ws, index }) => {
+					ws.send(
+						stringify({
+							type: EType.UPDATE_ROOM,
+							data: getAvailableRooms(),
+							id: 0,
+						}),
+					);
+					ws.send(
 						stringify({
 							type: EType.CREATE_GAME,
 							data: {
 								idGame: room.roomId,
-								idPlayer: secWebsocketKey,
+								idPlayer: index,
 							},
 							id: 0,
 						}),
@@ -117,34 +131,98 @@ wss.on("connection", function connection(ws, request) {
 				});
 				break;
 			}
-			case EType.ADD_SHIP: {
-				const ships = data.ships;
-				const currentRoom = DB.rooms[currentRoomId];
-				const user = currentRoom.roomUsers.find(
-					(user) => user.index === secWebsocketKey,
-				);
-				if (!user) break;
-				user.ships = ships;
-				currentRoom.currentPlayerIndex =
-					currentRoom.roomUsers[Math.random() < 0.5 ? 0 : 1].index;
-				const ready = DB.rooms[currentRoomId].roomUsers.filter(({ ships }) => {
+			case EType.ADD_SHIPS: {
+				const ships = data.ships as Omit<IShip, "coordinates">[];
+				const { room, player } = roomInfo(currentRoomId, secWebsocketKey);
+				if (!player) break;
+				player.ships = ships.map((ship) => ({
+					...ship,
+					coordinates: getCoordinates(ship),
+				}));
+				const ready = room.roomUsers.filter(({ ships }) => {
 					return ships.length > 0;
 				});
 				if (ready.length < 2) break;
-				currentRoom?.roomUsers.forEach((user) => {
-					const wsClient = DB.players[user.name].ws;
-					wsClient.send(
+				if (!room.currentPlayerIndex) {
+					room.currentPlayerIndex =
+						room.roomUsers[Math.random() < 0.5 ? 0 : 1].index;
+				}
+				room.roomUsers.forEach(({ ships, ws, index }) => {
+					ws.send(
 						stringify({
 							type: EType.START_GAME,
 							data: {
-								ships: ships,
-								currentPlayerIndex: secWebsocketKey,
+								ships,
+								currentPlayerIndex: index,
 							},
 							id: 0,
 						}),
 					);
-					turn(ws, currentRoom.currentPlayerIndex);
+					turn(ws, room.currentPlayerIndex);
 				});
+				break;
+			}
+			case EType.ATTACK: {
+				const { x, y, indexPlayer } = data;
+				const { room } = roomInfo(currentRoomId, secWebsocketKey);
+				if (indexPlayer !== room.currentPlayerIndex) break;
+				const rival = room.roomUsers.find((user) => user.index !== indexPlayer);
+				if (!rival) break;
+				const attackResult = getAttackResult(rival, x, y);
+				let currentPlayerIndex = rival.index;
+				if (
+					attackResult.length > 1 ||
+					attackResult[0].status !== EStatus.MISS
+				) {
+					currentPlayerIndex = indexPlayer;
+				}
+				room.currentPlayerIndex = currentPlayerIndex;
+				room.roomUsers.forEach(({ name, ws }) => {
+					attackResult.forEach((result) => {
+						DB.players[name].ws.send(
+							stringify({
+								type: EType.ATTACK,
+								data: {
+									position: result.coordinate,
+									currentPlayer: indexPlayer,
+									status: result.status,
+								},
+								id: 0,
+							}),
+						);
+					});
+					turn(ws, currentPlayerIndex);
+				});
+				if (rival.ships.length === 0) {
+					room.roomUsers.forEach((user) => {
+						const { ws } = user;
+						ws.send(
+							stringify({
+								type: EType.FINISH,
+								data: {
+									winPlayer: indexPlayer,
+								},
+								id: 0,
+							}),
+						);
+					});
+					const winner = DB.winners.find((winner) => winner.name === userName);
+					if (winner) {
+						winner.wins += 1;
+					} else {
+						DB.winners.push({ name: userName, wins: 1 });
+					}
+					wss.clients.forEach((client) => {
+						client.send(
+							stringify({
+								type: EType.UPDATE_WINNERS,
+								data: DB.winners,
+								id: 0,
+							}),
+						);
+					});
+					delete DB.rooms[currentRoomId];
+				}
 				break;
 			}
 			default: {
@@ -160,7 +238,7 @@ wss.on("connection", function connection(ws, request) {
 				);
 			}
 		}
-		console.log("DB", DB);
+		// console.log("DB", DB);
 	});
 
 	ws.on("close", function close() {
