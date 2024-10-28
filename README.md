@@ -4,20 +4,14 @@
 
 ## Installation
 1. Clone/download repo
-2. `npm install`
-
+2. `git checkout dev`
+3. `npm install`
+ ---
 ## Usage
-**Development**
 
-`npm run start:dev`
-
-* App served @ `http://localhost:8181` with nodemon
-
-**Production**
-
-`npm run start`
-
-* App served @ `http://localhost:8181` without nodemon
+`npm run start:dev` - start server on PORT 3000 \
+`npm run start:front1` - start first app instance on PORT 3001 \
+`npm run start:front2` - start second app instance on PORT 3002
 
 ---
 
@@ -25,7 +19,8 @@
 
 Command | Description
 --- | ---
-`npm run start:dev` | App served @ `http://localhost:8181` with nodemon
-`npm run start` | App served @ `http://localhost:8181` without nodemon
+`npm run start:dev` | Server `http://localhost:3000`
+`npm run start:front1` | Front 1 `http://localhost:3001`
+`npm run start:front2` | Front 2 `http://localhost:3002`
 
 **Note**: replace `npm` with `yarn` in `package.json` if you use yarn.
