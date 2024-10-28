@@ -162,8 +162,16 @@ wss.on("connection", function connection(ws, request) {
 				});
 				break;
 			}
+			case EType.RANDOM_ATTACK:
 			case EType.ATTACK: {
-				const { x, y, indexPlayer } = data;
+				const { indexPlayer } = data;
+				let { x, y } = data;
+				if (x === undefined) {
+					x = Math.floor(Math.random() * 10);
+				}
+				if (y === undefined) {
+					y = Math.floor(Math.random() * 10);
+				}
 				const { room } = roomInfo(currentRoomId, secWebsocketKey);
 				if (indexPlayer !== room.currentPlayerIndex) break;
 				const rival = room.roomUsers.find((user) => user.index !== indexPlayer);
